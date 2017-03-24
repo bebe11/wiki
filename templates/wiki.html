@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Wikipedia Url</title>
+
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="static/css/bootstrap.css" type="text/css">
+      <link rel="stylesheet" href="static/css/custom.css" type="text/css">
+
+	<!-- jQuery library -->
+    <script type="text/javascript" src="static/js/jquery-3.2.0.js"></script> 
+
+	<!-- Latest compiled JavaScript -->
+	<script src="static/js/bootstrap.min.js"></script>
+    <script src="static/js/script.js"></script>
+
+  </head>
+
+  <body>
+    <div class="container">
+        <div style="">
+            <div class="col-md-6 col-md-offset-4">
+                <h2 class="form-signin-heading">Wikipedia Url</h2>
+            </div>
+			<div class="row">
+			  <div class="col-md-6 col-md-offset-2">
+                <input type="url" id="txtUrl" name="url" class="form-control" placeholder="Wikipedia url">
+              </div>
+			  <div class="col-xs-6 col-md-4"><button class="btn" id="button" type="button">Submit</button></div>
+			</div>
+        </div>
+        <hr>
+        </br>
+        <form class="form-signin" id="myForm" role="form">
+            <div class="row">
+                <div id="tables" class="tables" style="font-size:9px;"></div>
+            </div>
+            </br></br>
+            <div class="row">
+                <div class="col-md-2 col-md-offset-8"><button class="btn" id="getTableButton" type="button">Get Table</button></div>
+                <div class="col-md-2"><button class="btn" id="exportButton" type="button">Export</button></div>
+            </div>
+        </form>
+        <hr>
+        </br>
+        <div class="row">
+            <div class="col-md-3">
+                <select id="viz_type_div" name="viz_type_select" class="form-control">
+                    <option value="none" selected>Válasszon vizualizációt!</option>
+                    <option value="line">vonal</option>
+                    <option value="pie">kör</option>
+                    <option value="area">terület</option>
+                    <option value="bar">oszlop</option>
+                    <option value="bar_stacked">halmozott oszlop</option>
+                    <option value="barh">vízszintes oszlop</option>
+                    <option value="barh_stacked">halmozott vízszintes oszlop</option>
+                </select>
+            </div>
+            <div class="col-md-2"><label id="xInput" name="xInput" class="form-control" placeholder="X axis"></div>
+            <div class="col-md-2"><label id="yInput" name="yInput" class="form-control" placeholder="Y axis"></div>
+            <div class="col-md-2"><input type="text" id="title" name="title" class="form-control" placeholder="title"></div>
+        </div>
+        </br>
+        <div class="row">
+            <div class="col-md-3">
+                <select id="aggregate" name="aggregate" class="form-control">
+                    <option value="none" selected>Válasszon aggregációt!</option>
+                    <option value="np.size">darab</option>
+                    <option value="np.sum">összeg</option>
+                    <option value="np.min">minimum</option>
+                    <option value="np.max">maximum</option>
+                    <option value="np.mean">átlag</option>
+                </select>
+            </div>
+            <div class="col-md-2"><input type="text" id="xTitle" name="xTitle" class="form-control" placeholder="x title"></div>
+            <div class="col-md-2"><input type="text" id="yTitle" name="xTitle" class="form-control" placeholder="y title"></div>
+        </div>
+        </br>
+        <div class="row">
+            <div class="col-md-2 col-md-offset-8"><button class="btn" id="resetButton" type="button">Reset</button></div>
+            <div class="col-md-2"><button class="btn" id="analysisButton" type="button">Analysis</button></div>
+        </div>
+        </br>
+        <div id="axis" class="row">
+            <div class="col-md-2"><input class="radio" type="radio" name="axisName" value="x"> X</div>  
+            <div class="col-md-2"><input class="radio" type="radio" name="axisName" value="y"> Y</div>
+        </div>
+        </br>
+        <div id="table" style="overflow: auto;max-height: 500px;" class="col-md-11"></div>
+        <div id="img"></div>
+    </div> <!-- /container -->
+  </body>
+</html>
+
