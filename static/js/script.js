@@ -1,97 +1,96 @@
 $(function() {
-    
-	$("#getTableButton").hide();
-    $("#exportButton").hide();
-	$("#viz_type_div").hide();
-    $("#xInput").hide();
-	$("#yInput").hide();
-    $("#axis").hide();
-    $("#resetButton").hide();
-    $("#analysisButton").hide();
-    $("#title").hide();
-    $("#xTitle").hide();
-    $("#yTitle").hide();
-    $("#aggregate").hide();
+    $("#txtUrl").bind('keypress', function(e) {
+    var code = e.which;
+    console.log(code);
+});
+	$("#panel1").hide();
+    $("#panel2").hide();
     
     countX = 0;
     countY = 0;
+    var checked = ''
     
     submit();
     getTable();
     analysis();
-    
-    $('#resetButton').click(function(){
-         $("#table table tr td, #table table tr th").each(function(){
-            $(this).css("border", "1px solid #ddd");
-        });
-        $("input[name=axisName]:checked").each(function(){
-            this.checked = false;  
-        });
-        $("#xInput").html('');
-        $("#yInput").html('');
-        countX = 0;
-        countY = 0;
+    reset();
+
+    $('#xInput').click(function(){
+         $("#yInput").removeAttr("style");
+         $('#xInput').css("border", "3px solid #905f98")
+         checked = 'x'
     });
 
-    $('#nextButton').click(function(){
-        var right = parseInt($('.image-holder').css("right"));
-        console.log(right);
-        $('.image-holder').css('right', right + 1000);
+    $('#yInput').click(function(){
+         $("#xInput").removeAttr("style");
+         $('#yInput').css("border", "3px solid #905f98")
+         checked = 'y'
     });
 
-     $('#previousButton').click(function(){
-        var left = parseInt($('.image-holder').css("left"));
-        console.log(left);
-        $('.image-holder').css('left', left - 1000);
-    });
-
-    
     $('#table').hover(function() {
-        var axisVal = $("input[name=axisName]:checked").val();
-        var tds = $("th");
+        var ths = $("th");
+
         var changeColumnColor = function() {
             var el = this;
             ownerIndex = $('th:contains("' + el.innerHTML + '")').index();
-            if (axisVal == 'x' && countX < 1) {
+            if (checked == 'x' && countX < 1) {
                 if ($("#yInput").text() != el.innerHTML){
-
-                    $('#table table tr td:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid red");
-                    $('#table table tr th:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid red");
+                    $('#table tr td:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid #905f98");
+                    $('#table tr th:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid #905f98");
                     $("#xInput").html(el.innerHTML);
                     countX++;
                 }
             }
-            if (axisVal == 'y' && countY < 1) {
+            if (checked == 'y' && countY < 1) {
                 if ($("#xInput").text() != el.innerHTML){
-                    $('#table table tr td:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid black");
-                    $('#table table tr th:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid black");
+                    $('#table tr td:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid #905f98");
+                    $('#table tr th:nth-child('+ (ownerIndex + 1) +')').css("border", "3px solid #905f98");
                     $("#yInput").html(el.innerHTML);
                     countY++;
                 }
             }
         };
 
-        for(var i = 0; i < tds.length; i++) {
-          tds[i].onclick = changeColumnColor;
+        for(var i = 0; i < ths.length; i++) {
+          ths[i].onclick = changeColumnColor;
         };
-    });  
+
+    });
+
+     $('#resetButton').click(function(){
+        reset();
+     });
 });
 
+function reset(){
+    $("#table tr td, #table table tr th").each(function(){
+        $(this).css("border", "1px solid #ddd");
+    });
+    $('#table').show();
+    $('#img').empty();
+    $("#xInput").html('');
+    $("#yInput").html('');
+    countX = 0;
+    countY = 0;
+}
+
 function submit(){
-    $('#button').click(function(){
+    $('#button').on('click', function () {
+        var $btn = $(this).button('loading')
         var url = $('#txtUrl').val();
         $.ajax({
             url: '/getWikiTables',
             data: {'url': url},
-            // cache: false,
             type: 'POST',
             success: function(response){
-                $("#getTableButton").show();
-                $("#exportButton").show();
+                $('#tables').empty();
+                $("#panel1").show();
                 $('#tables').append(response);
+                $btn.button('reset');
             },
             error: function(error){
                 console.log(error);
+                $btn.button('reset');
             }
         });
     });
@@ -99,20 +98,21 @@ function submit(){
 
 function getTable(){
     var selectedTable = '';
+
     $('#tables').bind("DOMSubtreeModified",function(){
         var table = $("table");
 
         var getParentTableID = function() {
             var el = this;
-            $('#tables div').css("border", "0px solid black");
-            $('#' + el.id).parent().css("border", "3px solid black");
+            $("table").removeAttr("style");
+            $('#' + el.id).css("border", "4px solid #000");
             selectedTable = el.id;
         };
 
         for(var i = 0; i < table.length; i++) {
           table[i].onclick = getParentTableID;
         };
-    });  
+    });
     $('#getTableButton').click(function() {
         $.ajax({
             url: '/getTable',
@@ -120,17 +120,11 @@ function getTable(){
             // cache: false,
             type: 'POST',
             success: function(response){
-                $('#table').append(response);
-				$("#viz_type_div").show();
-                $("#xInput").show();
-                $("#yInput").show();
-                $("#axis").show();
-                $("#resetButton").show();
-                $("#analysisButton").show();
-                $("#title").show();
-                $("#xTitle").show();
-                $("#yTitle").show();
-                $("#aggregate").show();
+                   reset();
+                   $('#table').empty();
+                   $('#img').empty();
+                   $('#table').append(response);
+                   $("#panel2").show();
             },
             error: function(error){
                 console.log(error);
@@ -149,12 +143,16 @@ function analysis(){
         var yTitle = $('#yTitle').val();
         var x = $('th:contains("' + $("#xInput").text() + '")').index();
         var y = $('th:contains("' + $("#yInput").text() + '")').index();
+        var sort = $("input[name=sortRadios]:checked").val();
         $.ajax({
             url: '/vizType',
-            data: {'viz': viz, 'x': x, 'y': y, 'aggregate': aggregate, 'title': title, 'xTitle': xTitle, 'yTitle': yTitle},
+            data: {'viz': viz, 'x': x, 'y': y, 'aggregate': aggregate, 'title': title, 'xTitle': xTitle, 'yTitle': yTitle, 'sort': sort},
             type: 'POST',
             success: function(response){
-                $('#table').replaceWith(response);
+                $('#img').empty();
+                $('#table').hide();
+                //$('#table').replaceWith(response);
+                $('#img').append(response);
             },
             error: function(error){
                 console.log(error);

@@ -3,7 +3,7 @@
 
 import base64
 from bs4 import BeautifulSoup
-from flask import Flask, json, make_response, redirect, render_template, request, send_file, url_for
+from flask import Flask, json, make_response, redirect, render_template, request, send_file, url_for, Response
 import io
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -11,12 +11,82 @@ import numpy as np
 import os
 import pandas as pd
 import re
+import string
 import urllib # .request
 
 app = Flask(__name__)
 
 table_id = None
 table_list = []
+
+
+def elemtipus(p):
+    """ Elemenként léptetünk végig, és visszaadunk egy választ: ezen elem alapján milyennek tippeljük a típust. """
+    
+    sp = [" ", u"\u00A0", ".", ","] # a potencialis elvalasztok
+    ezres = None
+    tizedes = None
+    
+    if isinstance(p, str):
+        p2 = p.strip()
+        p4 = p3 = p2
+        for e in sp:
+            p3 = p3.replace(e, "")
+        if p3.isdecimal():
+            dtsp = sum([int(x in p2) for x in sp]) # distinct hanyfele potencialis elvalaszto szerepel benne
+            if dtsp <= 2:
+                if dtsp == 0:
+                    return ("OK", "nincs elválasztó", None, None)
+                else:
+                    for e in string.digits:
+                        p4 = p4.replace(e, "")
+                    asp = {x: p4.count(x) for x in sp} # minden elvalasztora: hanyszor szerepel
+                    psp = {x: p2.rfind(x) for x in sp} # minden elvalasztora: mi a jobbszelso (utolso) elofordulas pozicioja
+                    maxpsp = max(psp.values()) # hol a jobbszelso (utolso) elofordulas
+                    jobbra = len(p2) - maxpsp - 1 # a jobbszelso (utolso) elofordulastol jobbra hany karakter talalhato
+                    for kulcs, ertek in asp.items():
+                        if ertek > 1: # ha tobb, mint egyszer fordul elo az elvalaszto, az nem lehet a tizedes, annak az ezresnek kell lennie
+                            ezres = kulcs
+                            break
+                    for kulcs, ertek in psp.items():
+                        if ertek == maxpsp and (jobbra != 3 or (jobbra == 3 and (dtsp == 2 or (maxpsp == 1 and p2[0] == "0") or maxpsp == 0))): # jobbszelso, kicsit turbozva (hany karakter van meg tole jobbra, stb.)
+                            tizedes = kulcs
+                            break
+                    if dtsp == 2:
+                        for kulcs, ertek in psp.items():
+                            if ertek > -1 and ertek != maxpsp: # ha distinct pont ketfele potencialis elvalaszto szerepel, akkor az eloszor elofordulo az ezres elvalaszto
+                                ezres = kulcs
+                                break
+                    return ("OK", "elválasztó", ezres, tizedes)
+            else:
+                return ("rossz", "sok különféle elválasztó", None, None) # a potencialis elvalasztok kozul tobb kulonfelet tartalmaz, mint lehetseges
+        else:
+            return ("rossz", "idegen karakter(ek)", None, None) # string, de a potencialis elvalasztokon tul mas karaktereket is tartalmaz, nem pusztan numerikus
+    else:
+        return ("rossz", "nem string", None, None) # nem string
+
+
+def oszloptipus(pdf, o):
+    """ Az oszlop típusát az elemenként lefuttatott típusvizsgálat alapján soroljuk be, a jellemzőnek talált elválasztó alapján. """
+    
+    tipus_oszlopok = ["statusz", "szoveg", "ezres", "tizedes"] # a seged-DataFrame leendo oszlopai
+    dft = pd.DataFrame(pdf[o].apply(elemtipus)) # seged-DataFrame, elemenkent futtatjuk a tipusvizsgalatot, aminek eredmenye minden sorra egy tuple
+    for i, e in enumerate(tipus_oszlopok):
+        dft[e] = dft[o].apply(lambda x: x[i]) # onallo oszlopokat kepzunk a tuple-bol
+    dft = dft.drop(o, axis=1) # eldobjuk az eredeti, tuple oszlopot
+    for j in dft[:].columns:
+        dft[j] = dft[j].astype("category") # eleg folosleges, csak a kategorikus oszlopok memoriahatekonyabbak, ha keves distinct erteket vesznek fol
+    
+    # a leggyakoribb elofordulasu, not None elvalasztot tekintjuk valosnak (illetve persze None)
+    s = dft.query("statusz == 'OK'")["ezres"].value_counts(sort=True, ascending=False, dropna=True).nlargest(2)
+    ezres = next((e[0] for e in s.iteritems() if e[1] is not None), None)
+    s = dft.query("statusz == 'OK'")["tizedes"].value_counts(sort=True, ascending=False, dropna=True).nlargest(2)
+    tizedes = next((e[0] for e in s.iteritems() if e[1] is not None), None)
+    
+    del dft # folosleges, tokmindegy
+    
+    return {"ezres": ezres,
+            "tizedes": tizedes}
 
 
 def read_html(url):
@@ -131,6 +201,7 @@ def find_tables(tables):
                 if row_span > 1:
                     temp_list.append({'value' : data, 'count' : row_span, 'th_index' : td_index, 'tr_index' : tr_index})
             row_list.append(datas)
+            print(row_list)
         df = pd.DataFrame(row_list[1:], columns=row_list[0])
         if has_row_span:
             temp_lista = []
@@ -141,18 +212,17 @@ def find_tables(tables):
                 temp_dict[df.columns[i]] = temp_ertek
             df.columns = temp_lista
             df = df[1:]
-        # table_list.append(df.to_html(index = False, classes = ["table","table-bordered"]).replace('border="1"','border="0"'))
         table_list.append(df)
 
 
 def get_tables_html():
     table_html = ''
     for i, table in enumerate(table_list):
-        table = table.to_html(index = False, classes = ["table", "table-bordered"]).replace('border="1"', 'border="0" id="table' + str(i) + '"')
+        table = table.to_html(index = False, classes = ["table", "table-bordered", "wiki-tables"]).replace('border="1"', 'border="0" id="table' + str(i) + '"')
         if (i + 1) % 2 == 0:
-            table_div = '<div style="overflow-y: hidden;max-height: 300px; padding-top: 20px"  class="col-md-5 md-offset-2">' + table
+            table_div = '<div style="overflow-y: hidden; display: inline-block;vertical-align: top; padding-right:30px">' + table
         else:
-            table_div = '<div style="overflow-y: hidden;max-height: 300px; padding-top: 20px"  class="col-md-5">' + table
+            table_div = '<div style="overflow-y: hidden; display: inline-block;vertical-align: top; padding-right:30px">' + table
         table_html += table_div + '</div>'
     return table_html
 
@@ -162,13 +232,22 @@ def get_single_table_html(df):
 
     
 def get_single_table_csv(df):
-    return df.to_csv(sep=",", index=False, encoding="utf-8", date_format="%Y-%m-%d")
+    result = df.to_csv(sep=",", index=False, encoding="utf-8", date_format="%Y-%m-%d")
+    return Response(
+            result,
+            mimetype="text/csv",
+            headers={"Content-disposition":
+                     "attachment; filename=myplot.csv"})
 
 
 @app.route('/')
 def wiki():
     return render_template('wiki.html')
 
+@app.route("/getPlotCSV")
+def get_plot_csv():
+    result = get_single_table_csv(table_list[table_id])
+    return result
 
 @app.route('/getWikiTables', methods=['POST'])
 def get_wiki_tables():
@@ -193,19 +272,20 @@ def get_viz():
     viz = result["viz"]
     o_sor = [int(result["x"])]
     o_ertek = [int(result["y"])]
+    sort_value = int(result["sort"])
     feliratok = {x: result[x].strip() for x in ["title", "xTitle", "yTitle"]}
     if request.method == "POST":
-        g = grafikon(grafikon_tipus=viz, o_sor=o_sor, o_ertek=o_ertek, grafikon_aggr=result["aggregate"], feliratok=feliratok)
+        g = grafikon(grafikon_tipus=viz, o_sor=o_sor, o_ertek=o_ertek, grafikon_aggr=result["aggregate"], feliratok=feliratok, rendezes=sort_value)
     else:
-        g = grafikon(grafikon_tipus="bar", o_sor=o_sor, o_ertek=o_ertek, grafikon_aggr=result["aggregate"], feliratok=feliratok)
+        g = grafikon(grafikon_tipus="bar", o_sor=o_sor, o_ertek=o_ertek, grafikon_aggr=result["aggregate"], feliratok=feliratok, rendezes=sort_value)
     gq = base64.b64encode(g).decode("utf-8").replace("\n", "")
     return '<img src="data:image/png;base64,{}"/>'.format(gq)
 
 
-def grafikon(grafikon_tipus, o_sor, o_ertek, grafikon_aggr, feliratok):
+def grafikon(grafikon_tipus, o_sor, o_ertek, grafikon_aggr, feliratok, rendezes=1):
     
-    print("o_sor:", o_sor, str(type(o_sor)))
-    print("o_ertek:", o_ertek, str(type(o_ertek)))
+    print("o_sor:", o_sor, str(type(o_sor))) # konzol print log
+    print("o_ertek:", o_ertek, str(type(o_ertek))) # konzol print log
     
     aggr_options = ["np.size", "np.sum", "np.min", "np.max", "np.mean"]
     grafikon_aggr_obj = None
@@ -224,14 +304,35 @@ def grafikon(grafikon_tipus, o_sor, o_ertek, grafikon_aggr, feliratok):
 
     # az előkészületek után irány a Pandas
     adf = table_list[table_id]
+    adf_olst = list(adf.select_dtypes(include=["object"]).columns) # az object tipusu oszlopok, melyek lehetnek objektumok, valodi stringek, de akar stringkent tarolt szamok is
+    # print("adf_olst lista:", adf_olst) # konzol print log
+    for ao in adf_olst: # vegigmegyunk az object tipusu oszlopokon
+        ad = oszloptipus(adf, ao)
+        if not (ad.get("ezres") is None and ad.get("tizedes") is None):
+            # print("A földerített oszloptípus, az elválasztó karakterek", ad) # konzol print log
+            adf[ao] = adf[ao].str.strip()
+            if ad.get("ezres") is not None:
+                adf[ao] = adf[ao].str.replace(ad.get("ezres"), "")
+            if ad.get("tizedes") is not None and ad.get("tizedes") != ".":
+                adf[ao] = adf[ao].str.replace(ad.get("tizedes"), ".")
+            adf[ao] = pd.to_numeric(adf[ao], errors="coerce")
+            print(ao, "oszlop átalakítva a saját numerikus átalakítóval") # konzol print log
     adf = adf.apply(lambda x: pd.to_numeric(x, errors="ignore"), axis=0) # számmá alakítjuk, amit lehet
-    print(adf.info())
-    print("adf hossza:", len(adf))
+    print(adf.info()) # konzol print log
+    print("adf hossza:", len(adf)) # konzol print log
     o_sor_obj = eval(o_sor_str) # már létezik adf objektum, itt már ki lehet értékelni
     
     agb = adf.iloc[:, o_kell].groupby(o_sor_obj)
     agba = agb.aggregate(grafikon_aggr_obj)
-    print("agba hossza:", len(agba))
+    if rendezes == 1:
+        agba.sort_index(ascending=True, inplace=True)
+    elif rendezes == 2:
+        agba.sort_index(ascending=False, inplace=True)
+    elif rendezes == 3:
+        agba.sort_values(by=agba.columns[0], ascending=True, inplace=True)
+    elif rendezes == 4:
+        agba.sort_index(by=agba.columns[0], ascending=False, inplace=True)
+    print("agba hossza:", len(agba)) # konzol print log
     
     if grafikon_tipus == "line":
         ch = agba.plot(kind="line", legend=jelmagyarazat)

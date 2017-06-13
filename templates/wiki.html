@@ -8,11 +8,12 @@
     <meta name="author" content="">
     <link rel="icon" href="../../favicon.ico">
 
-    <title>Wikipedia Url</title>
+    <title>Visualize Wikipedia</title>
 
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="static/css/bootstrap.css" type="text/css">
       <link rel="stylesheet" href="static/css/custom.css" type="text/css">
+      <link href="static/css/font-awesome-4.7.0/css/font-awesome.css" rel="stylesheet">
 
 	<!-- jQuery library -->
     <script type="text/javascript" src="static/js/jquery-3.2.0.js"></script> 
@@ -24,78 +25,160 @@
   </head>
 
   <body>
-    <div class="container">
+    <div class="container" id="container">
         <div style="">
             <div class="col-md-6 col-md-offset-4">
-                <h2 class="form-signin-heading">Wikipedia Url</h2>
+                <img id="logo" src="static/assets/picture/visualize_wiki_logo.png" style="height:150px; width:150px">
             </div>
 			<div class="row">
 			  <div class="col-md-6 col-md-offset-2">
                 <input type="url" id="txtUrl" name="url" class="form-control" placeholder="Wikipedia url">
               </div>
-			  <div class="col-xs-6 col-md-4"><button class="btn" id="button" type="button">Submit</button></div>
+			  <div class="col-xs-6 col-md-4"><button class="btn" id="button" data-loading-text="Loading..." autocomplete="off" type="button">Submit</button></div>
 			</div>
         </div>
         <hr>
         </br>
-        <form class="form-signin" id="myForm" role="form">
-            <div class="row">
-                <div id="tables" class="tables" style="font-size:9px;"></div>
+        <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+          <div id="panel1" class="panel panel-default">
+            <div class="panel-heading" role="tab" id="headingOne">
+              <h4 class="panel-title">
+                <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                  Tables
+                </a>
+              </h4>
             </div>
-            </br></br>
-            <div class="row">
-                <div class="col-md-2 col-md-offset-8"><button class="btn" id="getTableButton" type="button">Get Table</button></div>
-                <div class="col-md-2"><button class="btn" id="exportButton" type="button">Export</button></div>
+            <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+              <div class="panel-body">
+                <div class="row">
+                    <div id="tables" class="tables" style="font-size:9px; height:300px; overflow-x: scroll;overflow-y: hidden;white-space: nowrap;"></div>
+                </div>
+                </br></br>
+                <div class="row">
+                    <div class="col-md-2 col-md-offset-5"><button class="btn" id="getTableButton" type="button">Get Table</button></div>
+                </div>
+              </div>
             </div>
-        </form>
-        <hr>
-        </br>
-        <div class="row">
-            <div class="col-md-3">
-                <select id="viz_type_div" name="viz_type_select" class="form-control">
-                    <option value="none" selected>Válasszon vizualizációt!</option>
-                    <option value="line">vonal</option>
-                    <option value="pie">kör</option>
-                    <option value="area">terület</option>
-                    <option value="bar">oszlop</option>
-                    <option value="bar_stacked">halmozott oszlop</option>
-                    <option value="barh">vízszintes oszlop</option>
-                    <option value="barh_stacked">halmozott vízszintes oszlop</option>
-                </select>
+          </div>
+          <div id="panel2" class="panel panel-default">
+            <div class="panel-heading" role="tab" id="headingTwo">
+              <h4 class="panel-title">
+                <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                  Analysis
+                </a>
+              </h4>
             </div>
-            <div class="col-md-2"><label id="xInput" name="xInput" class="form-control" placeholder="X axis"></div>
-            <div class="col-md-2"><label id="yInput" name="yInput" class="form-control" placeholder="Y axis"></div>
-            <div class="col-md-2"><input type="text" id="title" name="title" class="form-control" placeholder="title"></div>
-        </div>
-        </br>
-        <div class="row">
-            <div class="col-md-3">
-                <select id="aggregate" name="aggregate" class="form-control">
-                    <option value="none" selected>Válasszon aggregációt!</option>
-                    <option value="np.size">darab</option>
-                    <option value="np.sum">összeg</option>
-                    <option value="np.min">minimum</option>
-                    <option value="np.max">maximum</option>
-                    <option value="np.mean">átlag</option>
-                </select>
+            <div id="collapseTwo" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+              <div class="panel-body">
+                  <div class="input-panel">
+                       <div class="row">
+                            <div class="col-md-3">
+                                <label>Visualisation: </label>
+                                </br>
+                                <select id="viz_type_div" name="viz_type_select" class="form-control">
+                                    <option value="none" selected>Select visualisation!</option>
+                                    <option value="line">line</option>
+                                    <option value="pie">pie</option>
+                                    <option value="area">area</option>
+                                    <option value="bar">bar</option>
+                                    <option value="bar_stacked">stacked bar </option>
+                                    <option value="barh">barh</option>
+                                    <option value="barh_stacked">stacked barh</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label>Aggregation: </label>
+                                </br>
+                                <select id="aggregate" name="aggregate" class="form-control">
+                                    <option value="none" selected>Select aggregation!</option>
+                                    <option value="np.size">count</option>
+                                    <option value="np.sum">sum</option>
+                                    <option value="np.min">minimum</option>
+                                    <option value="np.max">maximum</option>
+                                    <option value="np.mean">average</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-md-offset-2">
+                                <label>Group By: </label>
+                                </br>
+                                <label id="xInput" name="xInput" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Data: </label>
+                                </br>
+                                <label id="yInput" name="yInput" class="form-control">
+                            </div>
+                        </div>
+                        </br>
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label>Chart Title: </label>
+                                </br>
+                                <input type="text" id="title" name="title" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label>X Title on Chart: </label>
+                                </br>
+                                <input type="text" id="xTitle" name="xTitle" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Y Title on Chart: </label>
+                                </br>
+                                <input type="text" id="yTitle" name="xTitle" class="form-control">
+                            </div>
+                            <div class="col-md-2 col-md-offset-2">
+                                 <div class="radio">
+                                    <label>
+                                        <input type="radio" name="sortRadios" id="ascRadioGroup" value="1" checked>
+                                        Ascending by Group
+                                     </label>
+                                 </div>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="sortRadios" id="decRadioGroup" value="2" checked>
+                                        Decreasing by Group
+                                     </label>
+                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                 <div class="radio">
+                                    <label>
+                                        <input type="radio" name="sortRadios" id="ascRadioData" value="3" checked>
+                                        Ascending by Data
+                                     </label>
+                                 </div>
+                                <div class="radio">
+                                    <label>
+                                        <input type="radio" name="sortRadios" id="decRadioData" value="4" checked>
+                                        Decreasing by Data
+                                     </label>
+                                 </div>
+                            </div>
+                        </div>
+                        </br>
+                        <div class="row">
+                            <div class="col-md-2 col-md-offset-3"><button class="input-panel-btn btn" id="resetButton" type="button">Reset</button></div>
+                            <div class="col-md-2"><a class="input-panel-btn btn" id="exportButton" href="/getPlotCSV"><i class="fa fa-file" aria-hidden="true"></i> Export Table</a></div>
+                            <div class="col-md-2"><button class="input-panel-btn btn" id="analysisButton" type="button"><i class="fa fa-bar-chart" aria-hidden="true"></i> Analysis</button></div>
+                        </div>
+                    </div>
+                    </br>
+                    <div id="table" style="overflow:auto;max-height: 500px;" class="col-md-11"></div>
+                    <div id="img"></div>
+              </div>
             </div>
-            <div class="col-md-2"><input type="text" id="xTitle" name="xTitle" class="form-control" placeholder="x title"></div>
-            <div class="col-md-2"><input type="text" id="yTitle" name="xTitle" class="form-control" placeholder="y title"></div>
+          </div>
         </div>
-        </br>
-        <div class="row">
-            <div class="col-md-2 col-md-offset-8"><button class="btn" id="resetButton" type="button">Reset</button></div>
-            <div class="col-md-2"><button class="btn" id="analysisButton" type="button">Analysis</button></div>
-        </div>
-        </br>
-        <div id="axis" class="row">
-            <div class="col-md-2"><input class="radio" type="radio" name="axisName" value="x"> X</div>  
-            <div class="col-md-2"><input class="radio" type="radio" name="axisName" value="y"> Y</div>
-        </div>
-        </br>
-        <div id="table" style="overflow: auto;max-height: 500px;" class="col-md-11"></div>
-        <div id="img"></div>
     </div> <!-- /container -->
+    <footer class="footer">
+            <div class="text-center center-block">
+                    <a href="https://www.facebook.com/ixenit"><i id="social-fb" class="fa fa-facebook-square fa-3x social"></i></a>
+                    <a href="https://twitter.com/bootsnipp"><i id="social-tw" class="fa fa-twitter-square fa-3x social"></i></a>
+                    <a href="https://plus.google.com/+Bootsnipp-page"><i id="social-gp" class="fa fa-google-plus-square fa-3x social"></i></a>
+                    <a href="mailto:bootsnipp@gmail.com"><i id="social-em" class="fa fa-envelope-square fa-3x social"></i></a>
+            </div>
+
+    </footer>
   </body>
 </html>
 
